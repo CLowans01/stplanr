@@ -3,3 +3,7 @@
 # https://uc-r.github.io/kmeans_clustering
 # https://cran.r-project.org/web/packages/cluster/cluster.pdf
 # https://geocompr.robinlovelace.net/spatial-cv.html
+
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering algorithms & visualization

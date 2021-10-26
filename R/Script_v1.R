@@ -15,26 +15,21 @@
 #'   url = {https://doi.org/10.32614/RJ-2018-053},
 #' }
 
+# Load libraries and packages ---------------------------------------------
 
-#Load packages
 # if (!require("stplanr")) install.packages("stplanr")
 library(stplanr)
 library(osmdata)
 library(osrm)
-# Load libraries and packages ---------------------------------------------
-
+library(sf)
+library(tidyverse)
 
 if (!require("pacman")) install.packages("pacman")
 
-#load any needed pacman packages
-# pacman::p_load(pacman, rio, ..)
-
-# install.packages("tidyverse")
+# Load OD data ------------------------------------------------------------
 
 # load OD data - also NB rename the data that you load - stplanr data has default names per intro vignette
 # This bit not done with stplanr - need to clean and format etc
-
-# Load OD data ------------------------------------------------------------
 
 # u = "https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/536823/local-area-walking-and-cycling-in-england-2015.zip"
 # download.file(u, "local-area-walking-and-cycling-in-england-2015.zip")
@@ -56,17 +51,16 @@ if (!require("pacman")) install.packages("pacman")
 # summary(zones$geo_code %in% od$o)
 
 
+
+# Pairing for matching ODs ------------------------------------------------
+
+
 # use od_id and od_oneway to pair a-b and b-a data
 
 
 
+# Geographically subset OD data -------------------------------------------
 
-
-# Create OD sf object -----------------------------------------------------
-#
-# #To add travel data, we will undertake an attribute join,
-# # a common task described in Section 3.2.3.
-# # We will use travel data from the UK’s 2011 census question on travel to work, data stored in bristol_od,
 
 # # create bristol od from full OD data set
 # bristol_od = od_all %>%
@@ -78,25 +72,14 @@ if (!require("pacman")) install.packages("pacman")
 # summary(bristol_zones$geo_code %in% bristol_od$d)
 # summary(bristol_zones$geo_code %in% bristol_od$o)
 
-# create geographic zones
-# bristol_cents = st_centroid(msoa2011_vsimple)[bristol_ttwa, ]
-# plot(bristol_cents$geometry)
-# bristol_zones = msoa2011_vsimple[msoa2011_vsimple$msoa11cd \%in\% bristol_cents$msoa11cd, ] \%>\%
-#   select(geo_code = msoa11cd, name = msoa11nm) \%>\%
-#   mutate_at(1:2, as.character)
-# plot(bristol_zones$geometry, add = TRUE)
+# Create OD sf object -----------------------------------------------------
+#
+# #To add travel data, we will undertake an attribute join,
+# # a common task described in Section 3.2.3.
+# # We will use travel data from the UK’s 2011 census question on travel to work, data stored in bristol_od,
 
 
 
-# # The first column is the ID of the zone of origin and the second column is the zone of destination.
-# # bristol_od has more rows than bristol_zones, representing travel between zones rather than the zones themselves:
-# nrow(bristol_od)
-#
-# nrow(bristol_zones)
-#
-# # The results of the previous code chunk shows that there are more than 10 OD pairs for every zone,
-# # meaning we will need to aggregate the origin-destination data before it is joined with bristol_zones
-#
 # # The next chunk grouped the data by zone of origin (contained in the column o);
 # # aggregated the variables in the bristol_od dataset if they were numeric, to find the total number of people living in each zone by mode of transport;
 # # renamed the grouping variable o so it matches the ID column geo_code in the bristol_zones object.
