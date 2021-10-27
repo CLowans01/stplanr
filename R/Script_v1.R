@@ -18,38 +18,28 @@
 # Load libraries and packages ---------------------------------------------
 
 # if (!require("stplanr")) install.packages("stplanr")
+# install.packages("readxl")
 library(stplanr)
 library(osmdata)
 library(osrm)
 library(sf)
 library(tidyverse)
 
-if (!require("pacman")) install.packages("pacman")
+# if (!require("pacman")) install.packages("pacman")
 
-# Load OD data ------------------------------------------------------------
+# Load OD and Zone data ------------------------------------------------------------
 
-# load OD data - also NB rename the data that you load - stplanr data has default names per intro vignette
-# This bit not done with stplanr - need to clean and format etc
+# taken from geocomp 12 bristol help
 
-# u = "https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/536823/local-area-walking-and-cycling-in-england-2015.zip"
-# download.file(u, "local-area-walking-and-cycling-in-england-2015.zip")
-# unzip("local-area-walking-and-cycling-in-england-2015.zip")
-# View(readODS::read_ods("Table index.ods"))
-# cw0103 = readODS::read_ods("cw0103.ods")
-# View(cw0103)
-# ```
+# load OD flow data from csv into new object
+OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI.csv")
 
-# or
-# # using wicid open data - see http://wicid.ukdataservice.ac.uk/
-# unzip("~/Downloads/wu03ew_v2.zip")
-# od_all = read_csv("wu03ew_v2.csv")
-# file.remove("wu03ew_v2.csv")
-# od = od_all %>%
-#   select(o = `Area of residence`, d = `Area of workplace`, all = `All categories: Method of travel to work`, bicycle = Bicycle, foot = `On foot`, car_driver = `Driving a car or van`, train = Train) %>%
-#   filter(o %in% zones$geo_code & d %in% zones$geo_code, all > 19)
-# summary(zones$geo_code %in% od$d)
-# summary(zones$geo_code %in% od$o)
 
+# create sf dataframe from Northern Ireland shapefile using st_read
+NI_SOA <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\SOA2011.shp")
+
+# plot to check
+# plot(NI_SOA)
 
 
 # Pairing for matching ODs ------------------------------------------------
@@ -72,55 +62,56 @@ if (!require("pacman")) install.packages("pacman")
 # summary(bristol_zones$geo_code %in% bristol_od$d)
 # summary(bristol_zones$geo_code %in% bristol_od$o)
 
-# Create OD sf object -----------------------------------------------------
-#
-# #To add travel data, we will undertake an attribute join,
-# # a common task described in Section 3.2.3.
-# # We will use travel data from the UK’s 2011 census question on travel to work, data stored in bristol_od,
+# OD Manipulation to create arguments for OD2line  -----------------------------------------------------
 
+# there are many more rows in the OD data than the SOA data, so the OD data must be aggregated
 
+# call the new object zones_attr - a data frame with rows representing zones and an ID variable.
+zones_attr <- OD_NI %>%
+  # group by origin zone
+  group_by(o) %>%
+# sum columns across modes - nb comment out if data is already in "All"
+  #  summarize_if(is.numeric, sum) %>%
+  # rename grouping variable to match the ID column SOA_Label in the NI_SOA object
+  dplyr::rename(SOA_Label = o)
 
-# # The next chunk grouped the data by zone of origin (contained in the column o);
-# # aggregated the variables in the bristol_od dataset if they were numeric, to find the total number of people living in each zone by mode of transport;
-# # renamed the grouping variable o so it matches the ID column geo_code in the bristol_zones object.
-#
-# zones_attr = bristol_od %>%
-#   group_by(o) %>%
-#   summarize_if(is.numeric, sum) %>%
-#   dplyr::rename(geo_code = o)
-#
-# # The resulting object zones_attr is a data frame with rows representing zones and an ID variable.
-# # We can verify that the IDs match those in the zones dataset using the %in% operator as follows:
-# summary(zones_attr$geo_code %in% bristol_zones$geo_code)
-#
-# # The results show that all 102 zones are present in the new object and that zone_attr is in a form that can be joined onto the zones.
-# # This is done using the joining function left_join() (note that inner_join() would produce here the same result):
-#
-# zones_joined = left_join(bristol_zones, zones_attr, by = "geo_code")
-# sum(zones_joined$all)
-#
-# names(zones_joined)
+# # The resulting object zones_attr is
+# #  verify that the IDs match those in the zones dataset :
+ summary(zones_attr$SOA_Label %in% NI_SOA$SOA_Label)
 
-# The result is zones_joined, which contains new columns representing the total number of trips originating in each zone in the study area (almost 1/4 of a million)
-# and their mode of travel (by bicycle, foot, car and train).
+# if true, all 890 zones from NI_SOA are present in the new object and that zone_attr is in a form that can be joined onto the zones.
+# if false, the step hasnt worked
+
+# now join zones and zones attr
+zones_joined = left_join(NI_SOA, zones_attr, by = "SOA_Label")
+
+# checks
+sum(zones_joined$all)
+names(zones_joined)
+
+# zones_joined  contains new columns representing the total number of trips originating in each zone in the study area
+# and their mode of travel if present in the loaded data set.
 
 # OD_sfobj, the spatial object for the od2line function is created by aggregating information about destination zones
+# information about destination zones is arguably more useful because it shows greater clustering round work areas
 
-# OD_sfobj = OD_data %>%
-#   group_by(d) %>% # group by column d
-#   summarize_if(is.numeric, sum) %>% # summarise columns if they are numeric, sum them
-#   dplyr::select(geo_code = d, all_dest = all) %>% # subset columns using names and types
-#   inner_join(zones_joined, ., by = "geo_code") # use inner join function to join zones by geocode
+OD_sfobj = NI_OD %>%
+  group_by(d) %>% # group by column d
+#   summarize_if(is.numeric, sum) %>% # summarise columns - take all modes and sum them
+  dplyr::select(SOA_Label = d, all_dest = all) %>% # subset columns using names and types
+  inner_join(zones_joined, ., by = "SOA_Label") # use inner join function to join zones by geocode
 
-# OD_sfobj is now an sf data frame
+# OD_sfobj is now an sf data frame for use in od2line function
 
+# quick plot a heat map of destinations
 
-
+qtm(zones_od, c("all", "all_dest")) +
+  tm_layout(panel.labels = c("Origin", "Destination"))
 
 # Create desire lines -----------------------------------------------------
 
 # create desire lines
-# desire_lines = od2line(OD_data, OD_sfobj)
+desire_lines = od2line(OD_data, OD_sfobj)
 
 
 # is the data on mode available? if so, visualise by mode
