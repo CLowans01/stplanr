@@ -3,7 +3,6 @@
 
 # Intro and citations -----------------------------------------------------
 
-
 # citation for stplanr package:
 #' @Article{,
 #'   author = {{Robin Lovelace} and {Richard Ellison}},
@@ -14,7 +13,16 @@
 #'   journal = {{The R Journal}},
 #'   url = {https://doi.org/10.32614/RJ-2018-053},
 #' }
-
+#'
+#' citation for Geocomputation book
+#' @book{lovelace_geocomputation_2019,
+#'   title = {Geocomputation with {{R}}},
+#'   isbn = {1-138-30451-4},
+#'   abstract = {Book on geographic data with R.},
+#'   publisher = {{CRC Press}},
+#'   author = {Lovelace, Robin and Nowosad, Jakub and Muenchow, Jannes},
+#'   year = {2019}
+#' }
 # Load libraries and packages ---------------------------------------------
 
 # if (!require("stplanr")) install.packages("stplanr")
@@ -32,20 +40,14 @@ library(tidyverse)
 # taken from geocomp 12 bristol help
 
 # load OD flow data from csv into new object
-OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI.csv")
+OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI_geocoded.csv")
 
 
 # create sf dataframe from Northern Ireland shapefile using st_read
 NI_SOA <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\SOA2011.shp")
 
-# plot to check
+# plot to check if needed
 # plot(NI_SOA)
-
-
-# Pairing for matching ODs ------------------------------------------------
-
-
-# use od_id and od_oneway to pair a-b and b-a data
 
 
 
@@ -70,20 +72,20 @@ NI_SOA <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\SOA201
 zones_attr <- OD_NI %>%
   # group by origin zone
   group_by(o) %>%
-# sum columns across modes - nb comment out if data is already in "All"
-  #  summarize_if(is.numeric, sum) %>%
+# Group to find number of unique codes and aggregate the trips to the origin codes
+  summarize_if(is.numeric, sum) %>%
   # rename grouping variable to match the ID column SOA_Label in the NI_SOA object
-  dplyr::rename(SOA_Label = o)
+  dplyr::rename(SOA_CODE = o)
 
 # # The resulting object zones_attr is
 # #  verify that the IDs match those in the zones dataset :
- summary(zones_attr$SOA_Label %in% NI_SOA$SOA_Label)
+ summary(zones_attr$SOA_CODE %in% NI_SOA$SOA_CODE)
 
 # if true, all 890 zones from NI_SOA are present in the new object and that zone_attr is in a form that can be joined onto the zones.
 # if false, the step hasnt worked
 
 # now join zones and zones attr
-zones_joined = left_join(NI_SOA, zones_attr, by = "SOA_Label")
+zones_joined = left_join(NI_SOA, zones_attr, by = "SOA_CODE")
 
 # checks
 sum(zones_joined$all)
@@ -95,23 +97,27 @@ names(zones_joined)
 # OD_sfobj, the spatial object for the od2line function is created by aggregating information about destination zones
 # information about destination zones is arguably more useful because it shows greater clustering round work areas
 
-OD_sfobj = NI_OD %>%
+OD_sfobj = OD_NI %>%
   group_by(d) %>% # group by column d
-#   summarize_if(is.numeric, sum) %>% # summarise columns - take all modes and sum them
-  dplyr::select(SOA_Label = d, all_dest = all) %>% # subset columns using names and types
-  inner_join(zones_joined, ., by = "SOA_Label") # use inner join function to join zones by geocode
+  summarize_if(is.numeric, sum) %>% # grouping
+  dplyr::select(SOA_LABEL = d, all_dest = all) %>% # subset columns using names and types
+  inner_join(zones_joined, ., by = "SOA_LABEL") # use inner join function to join zones by geocode
 
 # OD_sfobj is now an sf data frame for use in od2line function
 
 # quick plot a heat map of destinations
 
-qtm(zones_od, c("all", "all_dest")) +
+qtm(zones_joined, c("all", "all_dest")) +
   tm_layout(panel.labels = c("Origin", "Destination"))
 
 # Create desire lines -----------------------------------------------------
 
+# filter out intra zonal travel into a new variable
+od_intra = filter(NI_OD, o == d)
+od_inter = filter(NI_OD, o != d)
+
 # create desire lines
-desire_lines = od2line(OD_data, OD_sfobj)
+desire_lines = od2line(od_inter, OD_sfobj)
 
 
 # is the data on mode available? if so, visualise by mode
