@@ -47,7 +47,7 @@ OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pai
 NI_SOA <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\SOA2011.shp")
 
 # plot to check if needed
-# plot(NI_SOA)
+ plot(NI_SOA)
 
 
 
@@ -85,7 +85,7 @@ zones_attr <- OD_NI %>%
 # if false, the step hasnt worked
 
 # now join zones and zones attr
-zones_joined = left_join(NI_SOA, zones_attr, by = "SOA_CODE")
+zones_joined <- left_join(NI_SOA, zones_attr, by = "SOA_CODE")
 
 # checks
 sum(zones_joined$all)
@@ -97,31 +97,31 @@ names(zones_joined)
 # OD_sfobj, the spatial object for the od2line function is created by aggregating information about destination zones
 # information about destination zones is arguably more useful because it shows greater clustering round work areas
 
-OD_sfobj = OD_NI %>%
+OD_sfobj <- OD_NI %>%
   group_by(d) %>% # group by column d
-  summarize_if(is.numeric, sum) %>% # grouping
-  dplyr::select(SOA_LABEL = d, all_dest = all) %>% # subset columns using names and types
-  inner_join(zones_joined, ., by = "SOA_LABEL") # use inner join function to join zones by geocode
+  summarize_if(is.numeric, sum) %>% # sum across the grouping
+  dplyr::select(SOA_CODE = d, all_dest = all) %>% # subset columns using names and types
+  inner_join(zones_joined, ., by = "SOA_CODE") # use inner join function to join zones by geocode
 
 # OD_sfobj is now an sf data frame for use in od2line function
 
 # quick plot a heat map of destinations
 
-qtm(zones_joined, c("all", "all_dest")) +
+qtm(OD_sfobj, c("all", "all_dest")) +
   tm_layout(panel.labels = c("Origin", "Destination"))
 
 # Create desire lines -----------------------------------------------------
 
 # filter out intra zonal travel into a new variable
-od_intra = filter(NI_OD, o == d)
-od_inter = filter(NI_OD, o != d)
+od_intra <- filter(OD_NI, o == d)
+od_inter <- filter(OD_NI, o != d)
 
 # create desire lines
-desire_lines = od2line(od_inter, OD_sfobj)
+desire_lines <- od2line(od_inter, OD_sfobj)
 
 
 # is the data on mode available? if so, visualise by mode
-
+qtm(desire_lines, lines.lwd = "all")
 
 # Routing -----------------------------------------------------------------
 
