@@ -1,5 +1,5 @@
 #C Lowans PhD work.
-# Script V1
+
 
 # Intro and citations -----------------------------------------------------
 
@@ -32,6 +32,7 @@ library(osmdata)
 library(osrm)
 library(sf)
 library(tidyverse)
+library(tmap)
 
 # if (!require("pacman")) install.packages("pacman")
 
@@ -125,15 +126,14 @@ qtm(desire_lines, lines.lwd = "all")
 
 # Routing -----------------------------------------------------------------
 
+# use geographic subset
 
-# load the APIs
-
-# OSRM for cars
-
-# cycle streets.net for cycle lanes
-
-# Use APIs to route
-
+# calculates the distance (i.e. length) of each desire line
+# desire_lines$distance = as.numeric(st_length(desire_lines))
+# attribute filter to create new object from desire lines containing more than 300 cars and 5km distance
+# desire_carshort = dplyr::filter(desire_lines, car_driver > 300 & distance < 5000)
+# create new sf objects representing the routes that have just been filtered out, and route using OSRM
+# route_carshort = route(l = desire_carshort, route_fun = route_osrm)
 
 # Distance ----------------------------------------------------------------
 
