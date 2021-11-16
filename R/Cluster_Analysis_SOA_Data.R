@@ -33,24 +33,28 @@
 #'   url = {https://doi.org/10.1111/gean.12100},
 # Load libraries and packages ---------------------------------------------
 
-# if (!require("stplanr")) install.packages("stplanr")
-# install.packages("readxl")
+
 library(stplanr)
 library(osmdata)
 library(osrm)
 library(sf)
 library(tidyverse)
+library(ClusterR)
+library(cluster)
+
 
 # clustering analysis of full NI data set
 
 # https://research.csiro.au/software/wp-content/uploads/sites/6/2015/02/Rspatialcourse_CMIS_PDF-Standard.pdf - ch23
 
 
+# load OD flow data from csv into new object
+OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI_geocoded.csv")
 
 
 # OD Routing --------------------------------------------------------------
 
-# run OD routing script down to desire lines part
+# run OD routing script down to desire lines part - need ODsfobj here
 # OD_Routing.R...
 # system("cmd.exe", input = paste('"C:\\Program Files\\R\\R-3.6.1\\bin\\Rscript.exe" C:\\Users\\nobody\\Documents\\R\\MyScript.R'))
 # density map o and d on same plot using the soa zones as a check
@@ -64,6 +68,9 @@ qtm(OD_sfobj, c("all", "all_dest")) +
 
 
 # Prepare distance matrix for flow cluster detection  ---------------------------------------------------
+
+
+
 
 # prepare flow events as vectors -> Fi(Xi, Yi, Ui, Vi)
 

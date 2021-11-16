@@ -42,10 +42,10 @@ library(tmap)
 OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI_geocoded.csv")
 
 # create sf dataframe from Northern Ireland shapefile using st_read
-NI_SOA <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\SOA2011.shp")
+Omagh <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\Omagh.shp")
 
 # plot to check if needed
- plot(NI_SOA)
+plot(Omagh)
 
 # Geographically subset OD data -------------------------------------------
 # https://github.com/Robinlovelace/geocompr/blob/main/code/12-desire.R
@@ -68,20 +68,20 @@ NI_SOA <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\SOA201
 zones_attr <- OD_NI %>% # subititute for geographical subset if needed
   # group by origin zone
   group_by(o) %>%
-# Group to find number of unique codes and aggregate the trips to the origin codes -> no destinations in this new object
+  # Group to find number of unique codes and aggregate the trips to the origin codes -> no destinations in this new object
   summarize_if(is.numeric, sum) %>%
-  # rename grouping variable to match the ID column SOA_Code in the NI_SOA object -> so now all origins are grouped by code
+  # rename grouping variable to match the ID column SOA_Code in the Omagh object -> so now all origins are grouped by code
   dplyr::rename(SOA_CODE = o)
 
 # # The resulting object zones_attr is joinable to the NI SOA object
 # #  verify that the IDs match those in the zones dataset :
- summary(zones_attr$SOA_CODE %in% NI_SOA$SOA_CODE)
+summary(zones_attr$SOA_CODE %in% Omagh$SOA_CODE)
 
-# if true, all 890 zones from NI_SOA are present in the new object and that zone_attr is in a form that can be joined onto the NI SOA object.
-# if false, the step hasnt worked and needs checked
+# if true, all x zones from Omagh are present in the new object and that zone_attr is in a form that can be joined onto the NI SOA object.
+# if false, the step hasnt worked entirely and needs checked for fatal errors or stuff
 
 # now join zones and zones attr
-zones_joined <- left_join(NI_SOA, zones_attr, by = "SOA_CODE")
+zones_joined <- left_join(Omagh, zones_attr, by = "SOA_CODE")
 # now we have code, label, number of times a zone is an origin, and the geometry
 
 # checks
@@ -109,8 +109,13 @@ qtm(OD_sfobj, c("all", "all_dest")) +
 od_intra <- filter(OD_NI, o == d)
 od_inter <- filter(OD_NI, o != d)
 
+# extract from od_inter only those codes that are present in Omagh shp file
+OD_Omagh <- od_inter %>%
+            filter(od_inter$o %in% Omagh$SOA_CODE) %>%
+            filter(od_inter$d %in% Omagh$SOA_CODE)
+
 # create desire lines excluding intra zonal travel
-desire_lines <- od2line(od_inter, OD_sfobj)
+desire_lines <- od2line(OD_Omagh, OD_sfobj)
 
 # desire lines with intra zonal travel included
 # All_desire_lines <-od2line(OD_NI, OD_sfobj) # nb the output here excludes distance - not sure why, so not useful. Possibly because some outcomes have dist = 0?
@@ -134,56 +139,3 @@ tm_shape(desire_lines)  +
 # export desire lines to run calcs in xlsx
 # in excel, the mean distance travelled for each origin zone is found - data then reloaded and a raster map drawn
 write.csv(desire_lines, "C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\Desire_Lines_Raw.csv")
-
-# Routing -----------------------------------------------------------------
-
-# use geographic subset
-
-# calculates the distance (i.e. length) of each desire line
-desire_lines$distance = as.numeric(st_length(desire_lines))
-# attribute filter to create new object from desire lines less than 5km distance
-desire_short = dplyr::filter(desire_lines, distance < 5000)
-# create new sf objects representing the routes that have just been filtered out, and route using OSRM
-# route_short = route(l = desire_short, route_fun = route_osrm)
-
-# The following command makes use of the ability of simple features objects to contain multiple geographic columns:
-# This allows plotting the desire lines along which many short car journeys take place alongside likely routes
-# traveled by cars by referring to each geometry column separately (desire_carshort$geometry and desire_carshort$geom_car in this case)
-# desire_short$geom_car = st_geometry(route_short)
-
-# plot desire lines and routes that we've just calculated
-plot(st_geometry(desire_short))
-# plot(desire_carshort$geom_car, col = "red", add = TRUE)
-plot(st_geometry(st_centroid(OD_sfobj)), add = TRUE)
-
-# Distance ----------------------------------------------------------------
-
-
-
-# Calc distances
-
-# compare euclidean distance with route distances & compare fastest vs quietest etc.for current travel patterns.
-# use linelabels
-
-
-
-# Catchment ---------------------------------------------------------------
-
-
-# catchment areas - calc_catchment_sum
-
-# if ican get a raster of elevation then i can add a line and extract elevation change along the line - see 5.4.2 in geocomp with R
-
-# reproduce input data for new scenarios with new modes assigned -> either scenarios or run modal split model elsewhere
-
-#rerunabove steps
-
-#visualise new networks & calculate travel times using google maps API or cycle streets API or bikecitizens API -> post hoc process to find ebike speed? use overline function?
-
-
-# Analysis ----------------------------------------------------------------
-
-
-
-# what are the new travel times of cars / buses with new levels of traffic?
-# Implicitly assume services are accessible in omagh town and new travel times increase accessibility?
