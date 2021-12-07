@@ -135,7 +135,7 @@ tm_shape(desire_lines)  +
 # in excel, the mean distance travelled for each origin zone is found - data then reloaded and a raster map drawn
 write.csv(desire_lines, "C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\Desire_Lines_Raw.csv")
 
-# Routing -----------------------------------------------------------------
+# Trips under a set distance  -----------------------------------------------------------------
 
 # use geographic subset
 

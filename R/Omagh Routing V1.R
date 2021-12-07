@@ -39,10 +39,10 @@ library(tmap)
 # taken from geocomp 12 bristol help
 
 # load OD flow data from csv into new object
-OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI_geocoded.csv")
+OD_NI <- read_csv("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\OD_Pairs_NI_geocoded_Omagh.csv")
 
 # create sf dataframe from Northern Ireland shapefile using st_read
-Omagh <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\Omagh.shp")
+Omagh <- st_read("C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\FermanaghandOmagh2.shp")
 
 # plot to check if needed
 plot(Omagh)
@@ -138,4 +138,27 @@ tm_shape(desire_lines)  +
 
 # export desire lines to run calcs in xlsx
 # in excel, the mean distance travelled for each origin zone is found - data then reloaded and a raster map drawn
-write.csv(desire_lines, "C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\Desire_Lines_Raw.csv")
+# write.csv(desire_lines, "C:\\Users\\40055486\\Desktop\\NI SOA & OD Files for R\\Desire_Lines_Raw.csv")
+
+
+# Trips under a given length ----------------------------------------------
+
+
+# calculates the distance (i.e. length) of each desire line
+desire_lines$distance = as.numeric(st_length(desire_lines))
+# attribute filter to create new object from desire lines less than x m distance
+desire_short = dplyr::filter(desire_lines, distance < 2000)
+# create new sf objects representing the routes that have just been filtered out, and route using a routing service
+route_short = route(l = desire_short, route_fun = route_osrm)
+
+
+# The following command makes use of the ability of simple features objects to contain multiple geographic columns:
+# This allows plotting the desire lines along which many short car journeys take place alongside likely routes
+# traveled by cars by referring to each geometry column separately (desire_carshort$geometry and desire_carshort$geom_car in this case)
+desire_short = st_geometry(route_short)
+
+# plot desire lines and routes that we've just calculated
+plot(st_geometry(desire_short))
+# plot(desire_short, col = "red", add = TRUE)
+plot(st_geometry(st_centroid(OD_sfobj)), add = TRUE)
+

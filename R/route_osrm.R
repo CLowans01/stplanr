@@ -43,7 +43,7 @@ route_osrm <- function(from, to, osrm.server = "https://routing.openstreetmap.de
     r <- jsonlite::read_json(req)
     d <- do.call(rbind, r$routes[[1]]$geometry$coordinates)
     storage.mode(d) <- "numeric"
-    dsfc <- sf::st_sfc(sf::st_linestring(d), crs = 4326)
+    dsfc <- sf::st_sfc(sf::st_linestring(d), crs = 4326) # 29902 for irish grid
     ddf <- data.frame(
       distance = r$routes[[1]]$distance,
       duration = r$routes[[1]]$duration
